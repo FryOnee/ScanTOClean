@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="myCanvas" width="500" height="500" style="border:1px solid #d3d3d3;">
+Twoja przeglądarka nie obsługuje elementu canvas.
+</canvas>
+
+<script>
+var canvas = document.getElementById('myCanvas');
+var ctx = canvas.getContext('2d');
+var img = new Image();
+img.src = 'Floors_Png\\floor_1.png'; // Podmień na swoje zdjęcie
+img.onload = function() {
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+};
+
+var drawing = false;
+var lassoPoints = [];
+
+canvas.onmousedown = function(e) {
+  drawing = true;
+  lassoPoints.push({x: e.x, y: e.y});
+};
+
+canvas.onmousemove = function(e) {
+  if (!drawing) return;
+  lassoPoints.push({x: e.x, y: e.y});
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
+  ctx.moveTo(lassoPoints[0].x, lassoPoints[0].y);
+  for (var i = 1; i < lassoPoints.length; i++) {
+    ctx.lineTo(lassoPoints[i].x, lassoPoints[i].y);
+  }
+  ctx.stroke();
+};
+
+canvas.onmouseup = function(e) {
+  drawing = false;
+  ctx.closePath();
+  ctx.fillStyle = 'white';
+  ctx.fill();
+};
+</script>
+
+</body>
+</html>

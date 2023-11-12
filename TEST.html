@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://code.jquery.com/jquery-3.0.0.min.js"></script>
+  
+
+
+  <link rel="stylesheet" href="TESTcss.css">
+  
+    <style>
+        
+        #canvas {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <div id="page">
+        <div id="image" style="width: 100%; height: 100%; overflow: hidden;">
+          <input type="file" id="imageInput" accept="image/*" style="display: none;">
+          <canvas id="canvas"></canvas>
+        </div>
+        <button id="clearButton">CLEAR LAST LASSO</button>
+        <button id="saveButton">SAVE</button>
+        <button id="newLassoButton">NEXT LASSO</button>
+        <button id="NEXT">NEXT</button>
+        <button id="BACK">BACK</button>
+        <input type="checkbox" id="mySwitch">
+      </div>
+    
+
+  <script>
+    let scale = 1;
+
+// Dodaj nasłuchiwanie zdarzeń
+
+
+
+    //const canvas = document.getElementById('canvas');
+    //const floorImage = document.getElementById("photo");
+    let floorImage = new Image();
+floorImage.src = 'Floors_Png/floor_1.png';
+
+floorImage.onload = function() {
+    canvas.width = floorImage.width;
+    canvas.height = floorImage.height;
+    // Teraz możesz użyć canvas do rysowania obrazka.
+    // Na przykład: context.drawImage(floorImage, 0, 0);
+};
+
+      const context = canvas.getContext('2d');
+      let lassoPath = new Path2D();
+      let lassoPoints = [];
+      let backgroundImage = new Image();
+      let walls = new Image();
+      let isImageLoaded = false;
+      let lassoHistory = [];
+
+      let counter=1;
+
+      // Ustaw początkową skalę
+
+
+
+
+    function updateFloorImage() {
+  // Tworzenie nazw plików obrazów na podstawie wartości counter
+  let floorImageName = `Floors_Png/floor_${counter}.png`;
+  let wallImageName = `Walls_Png/wall_${counter}.png`;
+
+  // Tworzenie obiektów obrazów
+  
+  backgroundImage.src = floorImageName;
+  
+  
+  walls.src = wallImageName;
+
+  // Po załadowaniu "floor_" rysuj "walls" jako nakładkę
+  backgroundImage.onload = () => {
+    isImageLoaded = true;
+    context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+
+    
+    walls.onload = () => {
+      context.drawImage(walls, 0, 0, canvas.width, canvas.height);
+    };
+  };
+}
+function loadWalls(){
+    let wallImageName = `Walls_Png/wall_${counter}.png`;
+    walls.src = wallImageName;
+    walls.onload = () => {
+    context.drawImage(walls, 0, 0, canvas.width, canvas.height);
+}}
+loadWalls()
+
+// Wywołanie funkcji updateFloorImage, aby ustawić obrazy
+updateFloorImage();
+
+      
+      document.addEventListener("DOMContentLoaded", function () {
+    
+    const NEXT = document.getElementById("NEXT");
+    const BACK = document.getElementById("BACK");
+
+    NEXT.addEventListener("click", function () {
+        counter++;
+        updateFloorImage();
+        lassoHistory = [];
+      })
+      BACK.addEventListener("click", function () {
+      counter--;
+      updateFloorImage();
+      lassoHistory = [];
+    })
+  })
+  
+
+        canvas.addEventListener('click', (e) => {
+            if (isImageLoaded) {
+                const x = e.clientX - canvas.getBoundingClientRect().left;
+                const y = e.clientY - canvas.getBoundingClientRect().top;
+                lassoPoints.push({ x, y });
+
+                lassoPath = new Path2D();
+                lassoPath.moveTo(lassoPoints[0].x, lassoPoints[0].y);
+
+                for (let i = 1; i < lassoPoints.length; i++) {
+                    lassoPath.lineTo(lassoPoints[i].x, lassoPoints[i].y);
+                }
+
+                
+                context.globalAlpha = 0.5;
+                context.fillStyle = 'rgba(255, 255, 255, 0.5)'; // Niebieskie, przezroczyste wypełnienie
+                context.fill(lassoPath, 'evenodd');
+                context.globalAlpha = 1;
+                changePixelsToWhite(context, lassoPath);
+                drawLassoHistory();
+            }
+        });
+
+        document.getElementById('clearButton').addEventListener('click', () => {
+            loadWalls()
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+            context.drawImage(walls, 0, 0, canvas.width, canvas.height);
+            
+            lassoPath = new Path2D();
+            lassoPoints = [];
+            
+            drawLassoHistory();
+            
+        });
+
+        document.getElementById('newLassoButton').addEventListener('click', () => {
+            if (lassoPoints.length > 0) {
+                lassoHistory.push({ path: lassoPath, points: lassoPoints });
+            }
+
+            lassoPath = new Path2D();
+            lassoPoints = [];
+        });
+
+        document.getElementById('saveButton').addEventListener('click', () => {
+            // Tworzenie kopii obrazu
+            const copyCanvas = document.createElement('canvas');
+            copyCanvas.width = canvas.width;
+            copyCanvas.height = canvas.height;
+            const copyContext = copyCanvas.getContext('2d');
+            copyContext.drawImage(backgroundImage, 0, 0, copyCanvas.width, copyCanvas.height);
+            copyContext.drawImage(walls, 0, 0, canvas.width, canvas.height);
+            copyContext.globalAlpha = 0.5;
+            copyContext.fillStyle = 'rgba(255, 255, 255, 0.5)'; // Niebieskie, przezroczyste wypełnienie
+            copyContext.fill(lassoPath, 'evenodd');
+            copyContext.globalAlpha = 1;
+            changePixelsToWhite(copyContext, lassoPath);
+            for (const lasso of lassoHistory) {
+                copyContext.globalAlpha = 0.5;
+                copyContext.fillStyle = 'rgba(255, 255, 255, 0.5)'; // Niebieskie, przezroczyste wypełnienie
+                copyContext.fill(lasso.path, 'evenodd');
+                copyContext.globalAlpha = 1;
+                changePixelsToWhite(copyContext, lasso.path);
+            }
+
+            const imgData = copyCanvas.toDataURL('image/jpeg');
+            const a = document.createElement('a');
+            a.href = imgData;
+            a.download = `Floors_Png/floor_${counter}.png`;
+            a.click();
+        });
+
+        function changePixelsToWhite(ctx, path) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over'; // Ustaw na 'source-over' aby nadpisywać piksele na biało
+            ctx.fillStyle = 'white';
+            ctx.fill(path);
+            ctx.restore();
+        }
+
+        function drawLassoHistory() {
+            for (const lasso of lassoHistory) {
+                context.globalAlpha = 0.5;
+                context.fillStyle = 'rgba(255, 255, 255, 50)'; // Niebieskie, przezroczyste wypełnienie
+                context.fill(lasso.path, 'evenodd');
+                context.globalAlpha = 1;
+                changePixelsToWhite(context, lasso.path);
+            }
+        }
+    </script>
+</body>
+</html>
