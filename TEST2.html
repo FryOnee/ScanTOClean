@@ -15,9 +15,28 @@
 <button id="RESET">RESET</button>
 <button id="clearButton">CLEAR LAST LASSO</button>
 <button id="newLassoButton">NEXT LASSO</button>
+<button id="saveButton">SAVE</button>
+<input type="checkbox" id="mySwitch" onchange="updateValue()">
+<p id="result">Color: </p>
 <ul id="wartosciZwracane"></ul>
 
 <script type="text/javascript" charset="utf-8">
+
+var color="(0,0,0,1)";
+
+function updateValue() {
+    var checkbox = document.getElementById("mySwitch");
+    var resultElement = document.getElementById("result");
+
+    // Jeśli checkbox jest zaznaczony, ustaw wartość na "Zaznaczone", w przeciwnym razie na "Nie zaznaczone"
+    var value = checkbox.checked ? "WHITE" : "BLACK";
+    color = checkbox.checked ? "rgba(255,255,255,1)" : "rgba(0,0,0,1)";
+
+    // Aktualizuj tekst wynikowy
+    resultElement.innerText = "COLOR: " + value;
+    
+}
+
 	var canvas = document.getElementsByTagName('canvas')[0];
 	let floorImage = new Image();
 floorImage.src = 'Floors_Png/floor_1.png';
@@ -269,7 +288,7 @@ trackTransforms(ctx);
   function changePixelsToWhite(ctx, path) {
             ctx.save();
             ctx.globalCompositeOperation = 'source-over'; // Ustaw na 'source-over' aby nadpisywać piksele na biało
-            ctx.fillStyle = 'white';
+            ctx.fillStyle = color;
             ctx.fill(path);
             ctx.restore();
         }
@@ -298,7 +317,7 @@ canvas.addEventListener('mousemove', function (evt) {
  
 function showShapes(){
             context.globalAlpha = 0.5;
-            context.fillStyle = 'rgba(255, 255, 255, 0.5)'; // Niebieskie, przezroczyste wypełnienie
+            context.fillStyle = color; // Niebieskie, przezroczyste wypełnienie
             context.fill(lassoPath, 'evenodd');
             context.globalAlpha = 1;
             changePixelsToWhite(context, lassoPath);
@@ -338,7 +357,7 @@ canvas.addEventListener('click', (e) => {
         function changePixelsToWhite(ctx, path) {
             ctx.save();
             ctx.globalCompositeOperation = 'source-over'; // Ustaw na 'source-over' aby nadpisywać piksele na biało
-            ctx.fillStyle = 'white';
+            ctx.fillStyle = color;
             ctx.fill(path);
             ctx.restore();
         }
@@ -355,12 +374,46 @@ canvas.addEventListener('click', (e) => {
         function drawLassoHistory() {
             for (const lasso of lassoHistory) {
                 context.globalAlpha = 0.5;
-                context.fillStyle = 'rgba(255, 255, 255, 50)'; // Niebieskie, przezroczyste wypełnienie
+                context.fillStyle = color; // Niebieskie, przezroczyste wypełnienie
                 context.fill(lasso.path, 'evenodd');
                 context.globalAlpha = 1;
                 changePixelsToWhite(context, lasso.path);
             }
         }
+
+        document.getElementById('saveButton').addEventListener('click', () => {
+    // Tworzenie kopii obrazu
+    const floorImage = new Image();
+    floorImage.src = `Floors_Png/floor_${counter}.png`;
+
+    floorImage.onload = function () {
+        const copyCanvas = document.createElement('canvas');
+        copyCanvas.width = floorImage.width;
+        copyCanvas.height = floorImage.height;
+        const copyContext = copyCanvas.getContext('2d');
+        copyContext.drawImage(floorImage, 0, 0, copyCanvas.width, copyCanvas.height);
+
+        copyContext.globalAlpha = 0.5;
+        copyContext.fillStyle = color; // Niebieskie, przezroczyste wypełnienie
+        copyContext.fill(lassoPath, 'evenodd');
+        copyContext.globalAlpha = 1;
+        changePixelsToWhite(copyContext, lassoPath);
+
+        for (const lasso of lassoHistory) {
+            copyContext.globalAlpha = 0.5;
+            copyContext.fillStyle = color; // Niebieskie, przezroczyste wypełnienie
+            copyContext.fill(lasso.path, 'evenodd');
+            copyContext.globalAlpha = 1;
+            changePixelsToWhite(copyContext, lasso.path);
+        }
+
+        const imgData = copyCanvas.toDataURL('image/jpeg');
+        const a = document.createElement('a');
+        a.href = imgData;
+        a.download = `Floors_Png/floor_${counter}.png`;
+        a.click();
+    };
+});
 
 </script>
 </body></html>
