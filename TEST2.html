@@ -12,6 +12,7 @@
 
 <button id="NEXT">NEXT</button>
 <button id="BACK">BACK</button>
+<button id="RESET">RESET</button>
 <ul id="wartosciZwracane"></ul>
 
 <script type="text/javascript" charset="utf-8">
@@ -27,7 +28,9 @@ floorImage.onload = function() {
     redraw();
 };
 
+var factor=1;
 let counter=1;
+
 var ctx = canvas.getContext('2d');
 trackTransforms(ctx);
 
@@ -91,6 +94,21 @@ trackTransforms(ctx);
 		}
 		redraw();
 
+    var originalTransform = null;
+
+    function saveOriginalTransform() {
+        originalTransform = ctx.getTransform().translate(0, 0);
+    }
+
+    function restoreOriginalTransform() {
+        if (originalTransform) {
+            ctx.setTransform(originalTransform);
+            redraw();
+        }
+    }
+
+    saveOriginalTransform();
+
     
 		
 		var lastX=canvas.width/2, lastY=canvas.height/2;
@@ -117,11 +135,11 @@ trackTransforms(ctx);
 			if (!dragged) zoom(evt.shiftKey ? -1 : 1 );
 		},false);
 
-		var scaleFactor = 1.05;
+		var scaleFactor = 10.5;
 		var zoom = function(clicks){
 			var pt = ctx.transformedPoint(lastX,lastY);
 			ctx.translate(pt.x,pt.y);
-			var factor = Math.pow(scaleFactor,clicks);
+			factor = Math.pow(scaleFactor,clicks);
 			ctx.scale(factor,factor);
 			ctx.translate(-pt.x,-pt.y);
 			redraw();
@@ -141,6 +159,7 @@ trackTransforms(ctx);
   document.addEventListener("DOMContentLoaded", function () {
     const NEXT = document.getElementById("NEXT");
     const BACK = document.getElementById("BACK");
+    const RESET = document.getElementById("RESET");
 
     NEXT.addEventListener("click", function () {
       counter++;
@@ -156,6 +175,12 @@ trackTransforms(ctx);
       NewFloorSrc();
       
     });
+    RESET.addEventListener("click", function () {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      factor=1.05;
+        redraw();
+			
+        });
   });
 
   function NewFloorSrc() {
@@ -225,6 +250,39 @@ trackTransforms(ctx);
 			return pt.matrixTransform(xform.inverse());
 		}
 	}
+  canvas.addEventListener('mousemove', function(evt){
+    lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+    lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+    dragged = true;
+
+    if (dragStart) {
+        var pt = ctx.transformedPoint(lastX, lastY);
+        console.log("Transformed Point:", pt);
+        
+        var floorCoords = inverseTransformPoint(pt.x, pt.y);
+        console.log("Floor Coordinates:", floorCoords);
+        
+        updateCursorPosition(floorCoords.x, floorCoords.y);
+        
+        ctx.translate(pt.x - dragStart.x, pt.y - dragStart.y);
+        redraw();
+    }
+}, false);
+
+function inverseTransformPoint(x, y) {
+    var transform = ctx.getTransform();
+    var inverse = new DOMMatrix(
+        transform.a, transform.b, transform.c, transform.d, transform.e, transform.f
+    );
+    inverse.invertSelf();
+    return { x: inverse.a * x + inverse.c * y + inverse.e, y: inverse.b * x + inverse.d * y + inverse.f };
+}
+
+function updateCursorPosition(x, y) {
+    console.log("Cursor Position - X:", x.toFixed(2), "Y:", y.toFixed(2));
+    var cursorPositionElement = document.getElementById("wartosciZwracane");
+    cursorPositionElement.innerHTML = "<li>X: " + x.toFixed(2) + ", Y: " + y.toFixed(2) + "</li>";
+}
 
  
 </script>
