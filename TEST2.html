@@ -13,6 +13,8 @@
 <button id="NEXT">NEXT</button>
 <button id="BACK">BACK</button>
 <button id="RESET">RESET</button>
+<button id="clearButton">CLEAR LAST LASSO</button>
+<button id="newLassoButton">NEXT LASSO</button>
 <ul id="wartosciZwracane"></ul>
 
 <script type="text/javascript" charset="utf-8">
@@ -30,6 +32,14 @@ floorImage.onload = function() {
 
 var factor=1;
 let counter=1;
+const context = canvas.getContext('2d');
+      let lassoPath = new Path2D();
+      let lassoPoints = [];
+      let backgroundImage = new Image();
+      let walls = new Image();
+      let isImageLoaded = false;
+      let lassoHistory = [];
+      var transformedPoint
 
 var ctx = canvas.getContext('2d');
 trackTransforms(ctx);
@@ -40,6 +50,7 @@ trackTransforms(ctx);
 		
 		function redraw(){
 			// Clear the entire canvas
+      
 			var p1 = ctx.transformedPoint(0,0);
 			var p2 = ctx.transformedPoint(canvas.width,canvas.height);
 			ctx.clearRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y);
@@ -87,6 +98,7 @@ trackTransforms(ctx);
 			ctx.restore();
 			
 			ctx.drawImage(wall,0,0);
+      
 			//ctx.drawImage(ball,454,239,40,40);
 			//ctx.drawImage(ball,310,295,20,20);
 			//ctx.drawImage(ball,314.5,296.5,5,5);
@@ -113,7 +125,7 @@ trackTransforms(ctx);
 		
 		var lastX=canvas.width/2, lastY=canvas.height/2;
 		var dragStart,dragged;
-		canvas.addEventListener('mousedown',function(evt){
+		canvas.addEventListener('mousedownp',function(evt){
 			document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none';
 			lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
 			lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
@@ -143,6 +155,7 @@ trackTransforms(ctx);
 			ctx.scale(factor,factor);
 			ctx.translate(-pt.x,-pt.y);
 			redraw();
+      showShapes()
 		}
 
 		var handleScroll = function(evt){
@@ -163,6 +176,7 @@ trackTransforms(ctx);
 
     NEXT.addEventListener("click", function () {
       counter++;
+      lassoHistory = [];
       NewFloorSrc();
       
     });
@@ -171,7 +185,7 @@ trackTransforms(ctx);
       if(counter!=1){
         counter--;
       }
-      
+      lassoHistory = [];
       NewFloorSrc();
       
     });
@@ -179,6 +193,7 @@ trackTransforms(ctx);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       factor=1.05;
         redraw();
+        showShapes()
 			
         });
   });
@@ -250,40 +265,102 @@ trackTransforms(ctx);
 			return pt.matrixTransform(xform.inverse());
 		}
 	}
-  canvas.addEventListener('mousemove', function(evt){
+
+  function changePixelsToWhite(ctx, path) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over'; // Ustaw na 'source-over' aby nadpisywać piksele na biało
+            ctx.fillStyle = 'white';
+            ctx.fill(path);
+            ctx.restore();
+        }
+
+  var cursorPosition = document.getElementById("wartosciZwracane");
+
+// ... (existing code)
+
+canvas.addEventListener('mousemove', function (evt) {
     lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
     lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+    
+    transformedPoint = ctx.transformedPoint(lastX, lastY);
+    
+    // Display pixel coordinates on the page
+    cursorPosition.innerHTML = `<li>X: ${transformedPoint.x.toFixed(2)}, Y: ${transformedPoint.y.toFixed(2)}</li>`;
+    
+  
     dragged = true;
-
     if (dragStart) {
         var pt = ctx.transformedPoint(lastX, lastY);
-        console.log("Transformed Point:", pt);
-        
-        var floorCoords = inverseTransformPoint(pt.x, pt.y);
-        console.log("Floor Coordinates:", floorCoords);
-        
-        updateCursorPosition(floorCoords.x, floorCoords.y);
-        
         ctx.translate(pt.x - dragStart.x, pt.y - dragStart.y);
         redraw();
     }
 }, false);
-
-function inverseTransformPoint(x, y) {
-    var transform = ctx.getTransform();
-    var inverse = new DOMMatrix(
-        transform.a, transform.b, transform.c, transform.d, transform.e, transform.f
-    );
-    inverse.invertSelf();
-    return { x: inverse.a * x + inverse.c * y + inverse.e, y: inverse.b * x + inverse.d * y + inverse.f };
-}
-
-function updateCursorPosition(x, y) {
-    console.log("Cursor Position - X:", x.toFixed(2), "Y:", y.toFixed(2));
-    var cursorPositionElement = document.getElementById("wartosciZwracane");
-    cursorPositionElement.innerHTML = "<li>X: " + x.toFixed(2) + ", Y: " + y.toFixed(2) + "</li>";
-}
-
  
+function showShapes(){
+            context.globalAlpha = 0.5;
+            context.fillStyle = 'rgba(255, 255, 255, 0.5)'; // Niebieskie, przezroczyste wypełnienie
+            context.fill(lassoPath, 'evenodd');
+            context.globalAlpha = 1;
+            changePixelsToWhite(context, lassoPath);
+            drawLassoHistory();
+}
+
+canvas.addEventListener('click', (e) => {
+            
+            const x = transformedPoint.x.toFixed(2);
+            const y = transformedPoint.y.toFixed(2);
+            lassoPoints.push({ x, y });
+
+            lassoPath = new Path2D();
+            lassoPath.moveTo(lassoPoints[0].x, lassoPoints[0].y);
+
+            for (let i = 1; i < lassoPoints.length; i++) {
+                lassoPath.lineTo(lassoPoints[i].x, lassoPoints[i].y);
+            }
+
+            showShapes();
+    });
+
+    document.getElementById('clearButton').addEventListener('click', () => {
+      redraw();
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+            context.drawImage(walls, 0, 0, canvas.width, canvas.height);
+            
+            lassoPath = new Path2D();
+            lassoPoints = [];
+            
+            redraw();
+            drawLassoHistory();
+            
+        });
+
+        function changePixelsToWhite(ctx, path) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over'; // Ustaw na 'source-over' aby nadpisywać piksele na biało
+            ctx.fillStyle = 'white';
+            ctx.fill(path);
+            ctx.restore();
+        }
+
+        document.getElementById('newLassoButton').addEventListener('click', () => {
+            if (lassoPoints.length > 0) {
+                lassoHistory.push({ path: lassoPath, points: lassoPoints });
+            }
+
+            lassoPath = new Path2D();
+            lassoPoints = [];
+        });
+
+        function drawLassoHistory() {
+            for (const lasso of lassoHistory) {
+                context.globalAlpha = 0.5;
+                context.fillStyle = 'rgba(255, 255, 255, 50)'; // Niebieskie, przezroczyste wypełnienie
+                context.fill(lasso.path, 'evenodd');
+                context.globalAlpha = 1;
+                changePixelsToWhite(context, lasso.path);
+            }
+        }
+
 </script>
 </body></html>
