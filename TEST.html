@@ -12,12 +12,15 @@
         #canvas {
             border: 1px solid #000;
         }
+        #image {
+            overflow: auto;
+        }
     </style>
 </head>
 <body>
     <div id="page">
-        <div id="image" style="width: 100%; height: 100%; overflow: hidden;">
-          <input type="file" id="imageInput" accept="image/*" style="display: none;">
+        <div id="image">
+          
           <canvas id="canvas"></canvas>
         </div>
         <button id="clearButton">CLEAR LAST LASSO</button>
@@ -30,9 +33,8 @@
     
 
   <script>
-    let scale = 1;
+    
 
-// Dodaj nasłuchiwanie zdarzeń
 
 
 
