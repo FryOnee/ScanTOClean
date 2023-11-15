@@ -3,20 +3,67 @@
 <html lang="en"><head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<style type="text/css" media="screen">
-		body { background:#eee; margin:1em; text-align:center; }
+		body { background:#9c9c9c; margin:1em; text-align:center; }
 		canvas { display:block; margin:1em auto; background:rgb(17, 17, 17); border:1px solid #ccc }
-	</style>
+/* Dostosowanie stylu do przypomnienia o stylu iPhone */
+.switch-container {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .switch-input {
+      display: none;
+    }
+
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #161616; /* Kolor tła nieaktywnego switcha */
+      border-radius: 34px; /* Zakrąglenie switcha */
+      transition: 0.4s;
+    }
+
+    .switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: darkgrey; /* Kolor tła aktywnego switcha */
+      border-radius: 50%;
+      transition: 0.4s;
+    }
+
+    /* Styl dla aktywnego switcha */
+    .switch-input:checked + .switch-slider {
+      background-color: #FFF; /* Kolor tła aktywnego switcha */
+    }
+
+    .switch-input:checked + .switch-slider:before {
+      transform: translateX(26px);
+    }
+</style>
 </head><body>
 
 <canvas></canvas>
 
-<button id="NEXT">NEXT</button>
 <button id="BACK">BACK</button>
+<button id="NEXT">NEXT</button>
 <button id="RESET">RESET</button>
 <button id="clearButton">CLEAR LAST LASSO</button>
 <button id="newLassoButton">NEXT LASSO</button>
 <button id="saveButton">SAVE</button>
-<input type="checkbox" id="mySwitch" onchange="updateValue()">
+<label class="switch-container">
+  <input type="checkbox" id="mySwitch" class="switch-input" onchange="updateValue()">
+  <span class="switch-slider"></span>
+</label>
 <p id="result">Color: </p>
 <ul id="wartosciZwracane"></ul>
 
@@ -354,35 +401,34 @@ canvas.addEventListener('click', (e) => {
             
         });
 
-        function changePixelsToWhite(ctx, path) {
-            ctx.save();
-            ctx.globalCompositeOperation = 'source-over'; // Ustaw na 'source-over' aby nadpisywać piksele na biało
-            ctx.fillStyle = color;
-            ctx.fill(path);
-            ctx.restore();
-        }
+        function changePixelsToWhite(ctx, path, color) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = color;
+    ctx.fill(path);
+    ctx.restore();
+}
 
-        document.getElementById('newLassoButton').addEventListener('click', () => {
-            if (lassoPoints.length > 0) {
-                lassoHistory.push({ path: lassoPath, points: lassoPoints });
-            }
+document.getElementById('newLassoButton').addEventListener('click', () => {
+    if (lassoPoints.length > 0) {
+        lassoHistory.push({ path: lassoPath, points: lassoPoints, color: color });
+    }
 
-            lassoPath = new Path2D();
-            lassoPoints = [];
-        });
+    lassoPath = new Path2D();
+    lassoPoints = [];
+});
 
-        function drawLassoHistory() {
-            for (const lasso of lassoHistory) {
-                context.globalAlpha = 0.5;
-                context.fillStyle = color; // Niebieskie, przezroczyste wypełnienie
-                context.fill(lasso.path, 'evenodd');
-                context.globalAlpha = 1;
-                changePixelsToWhite(context, lasso.path);
-            }
-        }
+function drawLassoHistory() {
+    for (const lasso of lassoHistory) {
+        context.globalAlpha = 0.5;
+        context.fillStyle = lasso.color;
+        context.fill(lasso.path, 'evenodd');
+        context.globalAlpha = 1;
+        changePixelsToWhite(context, lasso.path, lasso.color);
+    }
+}
 
-        document.getElementById('saveButton').addEventListener('click', () => {
-    // Tworzenie kopii obrazu
+document.getElementById('saveButton').addEventListener('click', () => {
     const floorImage = new Image();
     floorImage.src = `Floors_Png/floor_${counter}.png`;
 
@@ -394,17 +440,17 @@ canvas.addEventListener('click', (e) => {
         copyContext.drawImage(floorImage, 0, 0, copyCanvas.width, copyCanvas.height);
 
         copyContext.globalAlpha = 0.5;
-        copyContext.fillStyle = color; // Niebieskie, przezroczyste wypełnienie
+        copyContext.fillStyle = color;
         copyContext.fill(lassoPath, 'evenodd');
         copyContext.globalAlpha = 1;
-        changePixelsToWhite(copyContext, lassoPath);
+        changePixelsToWhite(copyContext, lassoPath, color);
 
         for (const lasso of lassoHistory) {
             copyContext.globalAlpha = 0.5;
-            copyContext.fillStyle = color; // Niebieskie, przezroczyste wypełnienie
+            copyContext.fillStyle = lasso.color;
             copyContext.fill(lasso.path, 'evenodd');
             copyContext.globalAlpha = 1;
-            changePixelsToWhite(copyContext, lasso.path);
+            changePixelsToWhite(copyContext, lasso.path, lasso.color);
         }
 
         const imgData = copyCanvas.toDataURL('image/jpeg');
