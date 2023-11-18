@@ -351,41 +351,112 @@ canvas.addEventListener('mousemove', function (evt) {
     transformedPoint = ctx.transformedPoint(lastX, lastY);
     
     // Display pixel coordinates on the page
+    //var oldcursorPosition=cursorPosition;
     cursorPosition.innerHTML = `<li>X: ${transformedPoint.x.toFixed(2)}, Y: ${transformedPoint.y.toFixed(2)}</li>`;
     
   
+    dragged = true;
+    
+    
+        var pt = ctx.transformedPoint(lastX, lastY);
+        ctx.translate(pt.x - dragStart.x, pt.y - dragStart.y);
+        redraw();
+        
+        
+}, false);
+ 
+function showShapes() {
+    context.globalAlpha = 0.5;
+    context.fillStyle = color; // Niebieskie, przezroczyste wypełnienie
+    context.fill(lassoPath, 'evenodd');
+    context.globalAlpha = 1;
+    changePixelsToWhite(context, lassoPath);
+
+    // Draw lines between the first, last, and current cursor positions
+    
+
+    drawLassoHistory();
+}
+
+ //Add a function to draw lines between the first, last, and current cursor positions
+function drawLinesBetweenPositions() {
+  //redraw()
+  redraw()
+  drawLassoHistory()
+  showShapes()
+  
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 0.5;
+    
+    // Draw line from first to last cursor position
+    if (lassoPoints.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(lassoPoints[0].x, lassoPoints[0].y);
+        ctx.lineTo(lassoPoints[lassoPoints.length - 1].x, lassoPoints[lassoPoints.length - 1].y);
+        ctx.stroke();
+    }
+
+    // Draw line from first cursor position to current cursor position
+    if (lassoPoints.length > 0) {
+        ctx.beginPath();
+        ctx.moveTo(lassoPoints[0].x, lassoPoints[0].y);
+        ctx.lineTo(transformedPoint.x.toFixed(2), transformedPoint.y.toFixed(2));
+        ctx.stroke();
+    }
+
+    // Draw line from last cursor position to current cursor position
+    if (lassoPoints.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(lassoPoints[lassoPoints.length - 1].x, lassoPoints[lassoPoints.length - 1].y);
+        ctx.lineTo(transformedPoint.x.toFixed(2), transformedPoint.y.toFixed(2));
+        ctx.stroke();
+    }
+    
+}
+setInterval(drawLinesBetweenPositions, 100);
+
+canvas.addEventListener('mousemove', function (evt) {
+    lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+    lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+
+    transformedPoint = ctx.transformedPoint(lastX, lastY);
+
+    // Update last cursor position
+    lastCursorPosition = { x: transformedPoint.x.toFixed(2), y: transformedPoint.y.toFixed(2) };
+
+    // If it's the first cursor position, set it
+    if (!firstCursorPosition) {
+        firstCursorPosition = { x: transformedPoint.x.toFixed(2), y: transformedPoint.y.toFixed(2) };
+    }
+
+    // Display pixel coordinates on the page
+    cursorPosition.innerHTML = `<li>X: ${transformedPoint.x.toFixed(2)}, Y: ${transformedPoint.y.toFixed(2)}</li>`;
+
     dragged = true;
     if (dragStart) {
         var pt = ctx.transformedPoint(lastX, lastY);
         ctx.translate(pt.x - dragStart.x, pt.y - dragStart.y);
         redraw();
     }
+
+    // Show shapes and lines
+    showShapes();
 }, false);
- 
-function showShapes(){
-            context.globalAlpha = 0.5;
-            context.fillStyle = color; // Niebieskie, przezroczyste wypełnienie
-            context.fill(lassoPath, 'evenodd');
-            context.globalAlpha = 1;
-            changePixelsToWhite(context, lassoPath);
-            drawLassoHistory();
-}
 
 canvas.addEventListener('click', (e) => {
-            
-            const x = transformedPoint.x.toFixed(2);
-            const y = transformedPoint.y.toFixed(2);
-            lassoPoints.push({ x, y });
+    const x = transformedPoint.x.toFixed(2);
+    const y = transformedPoint.y.toFixed(2);
+    lassoPoints.push({ x, y });
 
-            lassoPath = new Path2D();
-            lassoPath.moveTo(lassoPoints[0].x, lassoPoints[0].y);
+    lassoPath = new Path2D();
+    lassoPath.moveTo(lassoPoints[0].x, lassoPoints[0].y);
 
-            for (let i = 1; i < lassoPoints.length; i++) {
-                lassoPath.lineTo(lassoPoints[i].x, lassoPoints[i].y);
-            }
+    for (let i = 1; i < lassoPoints.length; i++) {
+        lassoPath.lineTo(lassoPoints[i].x, lassoPoints[i].y);
+    }
 
-            showShapes();
-    });
+    showShapes();
+});
 
     document.getElementById('clearButton').addEventListener('click', () => {
       redraw();

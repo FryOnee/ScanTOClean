@@ -1,33 +1,464 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="page.css">
-    <title>Strona z kwadratami</title>
-</head>
-<body>
-    <div id="container">
-        <div id="top-bar">
-            <span id="counter">1</span>
-        </div>
-        <div id="left">
-            <div id="left-square1"></div>
+<!DOCTYPE HTML>
+<html lang="en"><head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<style type="text/css" media="screen">
+		body { background:#9c9c9c; margin:1em; text-align:center; }
+		canvas { display:block; margin:1em auto; background:rgb(17, 17, 17); border:1px solid #ccc }
+/* Dostosowanie stylu do przypomnienia o stylu iPhone */
+.switch-container {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .switch-input {
+      display: none;
+    }
+
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #161616; /* Kolor tła nieaktywnego switcha */
+      border-radius: 34px; /* Zakrąglenie switcha */
+      transition: 0.4s;
+    }
+
+    .switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: darkgrey; /* Kolor tła aktywnego switcha */
+      border-radius: 50%;
+      transition: 0.4s;
+    }
+
+    /* Styl dla aktywnego switcha */
+    .switch-input:checked + .switch-slider {
+      background-color: #FFF; /* Kolor tła aktywnego switcha */
+    }
+
+    .switch-input:checked + .switch-slider:before {
+      transform: translateX(26px);
+    }
+</style>
+</head><body>
+
+<canvas></canvas>
+
+<button id="BACK">BACK</button>
+<button id="NEXT">NEXT</button>
+<button id="RESET">RESET</button>
+<button id="clearButton">CLEAR LAST LASSO</button>
+<button id="newLassoButton">NEXT LASSO</button>
+<button id="saveButton">SAVE</button>
+<label class="switch-container">
+  <input type="checkbox" id="mySwitch" class="switch-input" onchange="updateValue()">
+  <span class="switch-slider"></span>
+</label>
+<p id="result">Color: </p>
+<ul id="wartosciZwracane"></ul>
+
+<script type="text/javascript" charset="utf-8">
+
+var color="(0,0,0,1)";
+
+function updateValue() {
+    var checkbox = document.getElementById("mySwitch");
+    var resultElement = document.getElementById("result");
+
+    // Jeśli checkbox jest zaznaczony, ustaw wartość na "Zaznaczone", w przeciwnym razie na "Nie zaznaczone"
+    var value = checkbox.checked ? "WHITE" : "BLACK";
+    color = checkbox.checked ? "rgba(255,255,255,1)" : "rgba(0,0,0,1)";
+
+    // Aktualizuj tekst wynikowy
+    resultElement.innerText = "COLOR: " + value;
+    
+}
+
+	var canvas = document.getElementsByTagName('canvas')[0];
+	let floorImage = new Image();
+floorImage.src = 'Floors_Png/floor_1.png';
+
+floorImage.onload = function() {
+    canvas.width = floorImage.width;
+    canvas.height = floorImage.height;
+    // Teraz możesz użyć canvas do rysowania obrazka.
+    // Na przykład: context.drawImage(floorImage, 0, 0);
+    redraw();
+};
+
+var factor=1;
+let counter=1;
+const context = canvas.getContext('2d');
+      let lassoPath = new Path2D();
+      let lassoPoints = [];
+      let backgroundImage = new Image();
+      let walls = new Image();
+      let isImageLoaded = false;
+      let lassoHistory = [];
+      var transformedPoint
+
+var ctx = canvas.getContext('2d');
+trackTransforms(ctx);
+
+	var floor = new Image;
+	var wall = new Image;
+		
+		
+		function redraw(){
+			// Clear the entire canvas
+      
+			var p1 = ctx.transformedPoint(0,0);
+			var p2 = ctx.transformedPoint(canvas.width,canvas.height);
+			ctx.clearRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y);
+
+			// Alternatively:
+			// ctx.save();
+			// ctx.setTransform(1,0,0,1,0,0);
+			// ctx.clearRect(0,0,canvas.width,canvas.height);
+			// ctx.restore();
+
+			ctx.drawImage(floor,0,0);
+
+			ctx.beginPath();
+			ctx.lineWidth = 6;
+			ctx.moveTo(399,250);
+			ctx.lineTo(474,256);
+			ctx.stroke();
+
+			ctx.save();
+			ctx.translate(4,2);
+			ctx.beginPath();
+			ctx.lineWidth = 1;
+			ctx.moveTo(436,253);
+			ctx.lineTo(437.5,233);
+			ctx.stroke();
+
+			ctx.save();
+			ctx.translate(438.5,223);
+			ctx.strokeStyle = '#06c';
+			ctx.beginPath();
+			ctx.lineWidth = 0.05;
+			for (var i=0;i<60;++i){
+				ctx.rotate(6*i*Math.PI/180);
+				ctx.moveTo(9,0);
+				ctx.lineTo(10,0);
+				ctx.rotate(-6*i*Math.PI/180);
+			}
+			ctx.stroke();
+			ctx.restore();
+
+			ctx.beginPath();
+			ctx.lineWidth = 0.2;
+			ctx.arc(438.5,223,10,0,Math.PI*2);
+			ctx.stroke();
+			ctx.restore();
+			
+			ctx.drawImage(wall,0,0);
+      
+			//ctx.drawImage(ball,454,239,40,40);
+			//ctx.drawImage(ball,310,295,20,20);
+			//ctx.drawImage(ball,314.5,296.5,5,5);
+			//ctx.drawImage(ball,319,297.2,5,5);
+		}
+		redraw();
+
+    var originalTransform = null;
+
+    function saveOriginalTransform() {
+        originalTransform = ctx.getTransform().translate(0, 0);
+    }
+
+    function restoreOriginalTransform() {
+        if (originalTransform) {
+            ctx.setTransform(originalTransform);
+            redraw();
+        }
+    }
+
+    saveOriginalTransform();
+
+    
+		
+		var lastX=canvas.width/2, lastY=canvas.height/2;
+		var dragStart,dragged;
+		canvas.addEventListener('mousedownp',function(evt){
+			document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none';
+			lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+			lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+			dragStart = ctx.transformedPoint(lastX,lastY);
+			dragged = false;
+		},false);
+		canvas.addEventListener('mousemove',function(evt){
+			lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+			lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+			dragged = true;
+			if (dragStart){
+				var pt = ctx.transformedPoint(lastX,lastY);
+				ctx.translate(pt.x-dragStart.x,pt.y-dragStart.y);
+				redraw();
+			}
+		},false);
+		canvas.addEventListener('mouseup',function(evt){
+			dragStart = null;
+			if (!dragged) zoom(evt.shiftKey ? -1 : 1 );
+		},false);
+
+		var scaleFactor = 10.5;
+		var zoom = function(clicks){
+			var pt = ctx.transformedPoint(lastX,lastY);
+			ctx.translate(pt.x,pt.y);
+			factor = Math.pow(scaleFactor,clicks);
+			ctx.scale(factor,factor);
+			ctx.translate(-pt.x,-pt.y);
+			redraw();
+      showShapes()
+		}
+
+		var handleScroll = function(evt){
+			var delta = evt.wheelDelta ? evt.wheelDelta/40 : evt.detail ? -evt.detail : 0;
+			if (delta) zoom(delta);
+			return evt.preventDefault() && false;
+		};
+		canvas.addEventListener('DOMMouseScroll',handleScroll,false);
+		canvas.addEventListener('mousewheel',handleScroll,false);
+
+    
+	
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const NEXT = document.getElementById("NEXT");
+    const BACK = document.getElementById("BACK");
+    const RESET = document.getElementById("RESET");
+
+    NEXT.addEventListener("click", function () {
+      counter++;
+      lassoHistory = [];
+      NewFloorSrc();
+      
+    });
+
+    BACK.addEventListener("click", function () {
+      if(counter!=1){
+        counter--;
+      }
+      lassoHistory = [];
+      NewFloorSrc();
+      
+    });
+    RESET.addEventListener("click", function () {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      factor=1.05;
+        redraw();
+        showShapes()
+			
+        });
+  });
+
+  function NewFloorSrc() {
+    floor.src = `Floors_Png\\floor_${counter}.png`;
+    wall.src = `Walls_Png\\wall_${counter}.png`;
+    scaleFactor = 1.05;
+    redraw()
+  }
+  NewFloorSrc();
+
+
+	
+	// Adds ctx.getTransform() - returns an SVGMatrix
+	// Adds ctx.transformedPoint(x,y) - returns an SVGPoint
+	function trackTransforms(ctx){
+		var svg = document.createElementNS("http://www.w3.org/2000/svg",'svg');
+		var xform = svg.createSVGMatrix();
+		ctx.getTransform = function(){ return xform; };
+		
+		var savedTransforms = [];
+		var save = ctx.save;
+		ctx.save = function(){
+			savedTransforms.push(xform.translate(0,0));
+			return save.call(ctx);
+		};
+		var restore = ctx.restore;
+		ctx.restore = function(){
+			xform = savedTransforms.pop();
+			return restore.call(ctx);
+		};
+
+		var scale = ctx.scale;
+		ctx.scale = function(sx,sy){
+			xform = xform.scaleNonUniform(sx,sy);
+			return scale.call(ctx,sx,sy);
+		};
+		var rotate = ctx.rotate;
+		ctx.rotate = function(radians){
+			xform = xform.rotate(radians*180/Math.PI);
+			return rotate.call(ctx,radians);
+		};
+		var translate = ctx.translate;
+		ctx.translate = function(dx,dy){
+			xform = xform.translate(dx,dy);
+			return translate.call(ctx,dx,dy);
+		};
+		var transform = ctx.transform;
+		ctx.transform = function(a,b,c,d,e,f){
+			var m2 = svg.createSVGMatrix();
+			m2.a=a; m2.b=b; m2.c=c; m2.d=d; m2.e=e; m2.f=f;
+			xform = xform.multiply(m2);
+			return transform.call(ctx,a,b,c,d,e,f);
+		};
+		var setTransform = ctx.setTransform;
+		ctx.setTransform = function(a,b,c,d,e,f){
+			xform.a = a;
+			xform.b = b;
+			xform.c = c;
+			xform.d = d;
+			xform.e = e;
+			xform.f = f;
+			return setTransform.call(ctx,a,b,c,d,e,f);
+		};
+		var pt  = svg.createSVGPoint();
+		ctx.transformedPoint = function(x,y){
+			pt.x=x; pt.y=y;
+			return pt.matrixTransform(xform.inverse());
+		}
+	}
+
+  function changePixelsToWhite(ctx, path) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over'; // Ustaw na 'source-over' aby nadpisywać piksele na biało
+            ctx.fillStyle = color;
+            ctx.fill(path);
+            ctx.restore();
+        }
+
+  var cursorPosition = document.getElementById("wartosciZwracane");
+
+// ... (existing code)
+
+canvas.addEventListener('mousemove', function (evt) {
+    lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
+    lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
+    
+    transformedPoint = ctx.transformedPoint(lastX, lastY);
+    
+    // Display pixel coordinates on the page
+    cursorPosition.innerHTML = `<li>X: ${transformedPoint.x.toFixed(2)}, Y: ${transformedPoint.y.toFixed(2)}</li>`;
+    
+  
+    dragged = true;
+    if (dragStart) {
+        var pt = ctx.transformedPoint(lastX, lastY);
+        ctx.translate(pt.x - dragStart.x, pt.y - dragStart.y);
+        redraw();
+    }
+}, false);
+ 
+function showShapes(){
+            context.globalAlpha = 0.5;
+            context.fillStyle = color; // Niebieskie, przezroczyste wypełnienie
+            context.fill(lassoPath, 'evenodd');
+            context.globalAlpha = 1;
+            changePixelsToWhite(context, lassoPath);
+            drawLassoHistory();
+}
+
+canvas.addEventListener('click', (e) => {
             
-        </div>
-        <div id="right-rectangle">
-            <button id="my-button">NEXT</button>
-            <button id="my-button1">BACK</button>
+            const x = transformedPoint.x.toFixed(2);
+            const y = transformedPoint.y.toFixed(2);
+            lassoPoints.push({ x, y });
+
+            lassoPath = new Path2D();
+            lassoPath.moveTo(lassoPoints[0].x, lassoPoints[0].y);
+
+            for (let i = 1; i < lassoPoints.length; i++) {
+                lassoPath.lineTo(lassoPoints[i].x, lassoPoints[i].y);
+            }
+
+            showShapes();
+    });
+
+    document.getElementById('clearButton').addEventListener('click', () => {
+      redraw();
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+            context.drawImage(walls, 0, 0, canvas.width, canvas.height);
             
-                <button id="clearButton">Wyczyść</button>
-                <button id="saveButton">Zapisz</button>
-                <button id="newLassoButton">Nowe lasso</button></div>
+            lassoPath = new Path2D();
+            lassoPoints = [];
             
-            <div id="functions">
-                <button id="my-button1">What is under?</button>
-            </div>
-        </div>
-    </div>
-    <script src="script.js"></script>
-</body>
-</html>
+            redraw();
+            drawLassoHistory();
+            
+        });
+
+        function changePixelsToWhite(ctx, path, color) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = color;
+    ctx.fill(path);
+    ctx.restore();
+}
+
+document.getElementById('newLassoButton').addEventListener('click', () => {
+    if (lassoPoints.length > 0) {
+        lassoHistory.push({ path: lassoPath, points: lassoPoints, color: color });
+    }
+
+    lassoPath = new Path2D();
+    lassoPoints = [];
+});
+
+function drawLassoHistory() {
+    for (const lasso of lassoHistory) {
+        context.globalAlpha = 0.5;
+        context.fillStyle = lasso.color;
+        context.fill(lasso.path, 'evenodd');
+        context.globalAlpha = 1;
+        changePixelsToWhite(context, lasso.path, lasso.color);
+    }
+}
+
+document.getElementById('saveButton').addEventListener('click', () => {
+    const floorImage = new Image();
+    floorImage.src = `Floors_Png/floor_${counter}.png`;
+
+    floorImage.onload = function () {
+        const copyCanvas = document.createElement('canvas');
+        copyCanvas.width = floorImage.width;
+        copyCanvas.height = floorImage.height;
+        const copyContext = copyCanvas.getContext('2d');
+        copyContext.drawImage(floorImage, 0, 0, copyCanvas.width, copyCanvas.height);
+
+        copyContext.globalAlpha = 0.5;
+        copyContext.fillStyle = color;
+        copyContext.fill(lassoPath, 'evenodd');
+        copyContext.globalAlpha = 1;
+        changePixelsToWhite(copyContext, lassoPath, color);
+
+        for (const lasso of lassoHistory) {
+            copyContext.globalAlpha = 0.5;
+            copyContext.fillStyle = lasso.color;
+            copyContext.fill(lasso.path, 'evenodd');
+            copyContext.globalAlpha = 1;
+            changePixelsToWhite(copyContext, lasso.path, lasso.color);
+        }
+
+        const imgData = copyCanvas.toDataURL('image/jpeg');
+        const a = document.createElement('a');
+        a.href = imgData;
+        a.download = `Floors_Png/floor_${counter}.png`;
+        a.click();
+    };
+});
+
+</script>
+</body></html>
